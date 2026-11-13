@@ -14,7 +14,6 @@ import {
 import MapSelector from "@/components/MapSelector";
 import TrendChart from "@/components/TrendChart";
 import ScanModal from "@/components/ScanModal";
-import DayMonthYearPicker from "@/components/DayMonthYearPicker";
 import { analyzeVariable } from "@/lib/api";
 import {
   TrendAnalysisResponse,
@@ -302,24 +301,27 @@ export default function HotSourcePage() {
                 </span>
               </div>
 
-              {/* Time Range (Day, Month, Year Selection) */}
-              <div className="flex flex-col gap-3 p-3.5 rounded-2xl bg-[#0d1e0d] border border-[#1b3d1b]">
-                <DayMonthYearPicker
-                  label="Start Date"
+              {/* Time Range: Single unified date element selecting Day, Month, Year */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-300 min-w-[78px]">
+                  Time Range:
+                </span>
+                <input
+                  type="date"
                   value={startDate}
-                  onChange={setStartDate}
-                  minYear={1980}
-                  maxYear={2026}
+                  min="1980-01-01"
+                  max="2026-12-31"
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full text-center text-xs font-bold font-mono bg-[#d9d9d9] text-slate-900 rounded-full py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#5cd466] shadow-sm cursor-pointer [color-scheme:light]"
                 />
-
-                <div className="border-t border-[#1b3d1b]/60 my-0.5" />
-
-                <DayMonthYearPicker
-                  label="End Date"
+                <span className="text-xs text-slate-400 font-semibold px-0.5">To</span>
+                <input
+                  type="date"
                   value={endDate}
-                  onChange={setEndDate}
-                  minYear={1980}
-                  maxYear={2026}
+                  min="1980-01-01"
+                  max="2026-12-31"
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full text-center text-xs font-bold font-mono bg-[#d9d9d9] text-slate-900 rounded-full py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#5cd466] shadow-sm cursor-pointer [color-scheme:light]"
                 />
               </div>
 
