@@ -436,22 +436,22 @@ export default function HotSourcePage() {
                   ) : (
                     /* Dual Region Cards (Screen 4) */
                     <div className="grid grid-cols-2 gap-2.5">
-                      <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
+                      <div className="bg-[#d9d9d9] border-2 border-[#5cd466] text-slate-950 rounded-2xl p-3 shadow-sm">
                         <div className="text-xs font-black capitalize truncate">
                           {dataA?.variable_name.replace(/_/g, " ")}
                         </div>
                         <div className="text-[10px] font-semibold text-slate-700 mt-0.5">
-                          A: {dataA?.trend.sen_slope && dataA.trend.sen_slope > 0 ? "+" : ""}
-                          {(dataA?.trend.sen_slope || 0).toFixed(4)}/yr
+                          A: {(dataA?.trend?.sen_slope ?? 0) > 0 ? "+" : ""}
+                          {(dataA?.trend?.sen_slope ?? 0).toFixed(4)} {dataA?.unit}/yr
                         </div>
                       </div>
-                      <div className="bg-[#d9d9d9] border-2 border-[#5cd466] text-slate-950 rounded-2xl p-3 shadow-sm">
+                      <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
                         <div className="text-xs font-black capitalize truncate">
                           {dataB?.variable_name.replace(/_/g, " ")}
                         </div>
                         <div className="text-[10px] font-semibold text-slate-700 mt-0.5">
-                          B: {dataB?.trend.sen_slope && dataB.trend.sen_slope > 0 ? "+" : ""}
-                          {(dataB?.trend.sen_slope || 0).toFixed(4)}/yr
+                          B: {(dataB?.trend?.sen_slope ?? 0) > 0 ? "+" : ""}
+                          {(dataB?.trend?.sen_slope ?? 0).toFixed(4)} {dataB?.unit}/yr
                         </div>
                       </div>
                     </div>
@@ -475,7 +475,7 @@ export default function HotSourcePage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2.5">
-                      <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
+                      <div className="bg-[#d9d9d9] border-2 border-[#5cd466] text-slate-950 rounded-2xl p-3 shadow-sm">
                         <div className="text-xs font-black truncate">
                           {regionA.label}
                         </div>
@@ -483,7 +483,7 @@ export default function HotSourcePage() {
                           {regionA.lat.toFixed(1)}°, {regionA.lon.toFixed(1)}°
                         </div>
                       </div>
-                      <div className="bg-[#d9d9d9] border-2 border-[#5cd466] text-slate-950 rounded-2xl p-3 shadow-sm">
+                      <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
                         <div className="text-xs font-black truncate">
                           {regionB?.label || "Region B"}
                         </div>
@@ -513,22 +513,24 @@ export default function HotSourcePage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2.5">
-                      <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
-                        <div className="text-xs font-black">
-                          {(dataA?.trend?.sen_slope ?? 0) > 0 ? "+" : ""}
-                          {(dataA?.trend?.sen_slope ?? 0).toFixed(4)}
-                        </div>
-                        <div className="text-[10px] font-semibold text-slate-700">
-                          Δ: {(dataA?.trend?.cumulative_change ?? 0).toFixed(2)} {dataA?.unit}
-                        </div>
-                      </div>
                       <div className="bg-[#d9d9d9] border-2 border-[#5cd466] text-slate-950 rounded-2xl p-3 shadow-sm">
                         <div className="text-xs font-black">
-                          {(dataB?.trend?.sen_slope ?? 0) > 0 ? "+" : ""}
-                          {(dataB?.trend?.sen_slope ?? 0).toFixed(4)}
+                          {(dataA?.trend?.sen_slope ?? 0) > 0 ? "+" : ""}
+                          {(dataA?.trend?.sen_slope ?? 0).toFixed(4)} {dataA?.unit}/yr
                         </div>
                         <div className="text-[10px] font-semibold text-slate-700">
-                          Δ: {(dataB?.trend?.cumulative_change ?? 0).toFixed(2)} {dataB?.unit}
+                          Cumulative: {(dataA?.trend?.cumulative_change ?? 0) > 0 ? "+" : ""}
+                          {(dataA?.trend?.cumulative_change ?? 0).toFixed(2)} {dataA?.unit}
+                        </div>
+                      </div>
+                      <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
+                        <div className="text-xs font-black">
+                          {(dataB?.trend?.sen_slope ?? 0) > 0 ? "+" : ""}
+                          {(dataB?.trend?.sen_slope ?? 0).toFixed(4)} {dataB?.unit}/yr
+                        </div>
+                        <div className="text-[10px] font-semibold text-slate-700">
+                          Cumulative: {(dataB?.trend?.cumulative_change ?? 0) > 0 ? "+" : ""}
+                          {(dataB?.trend?.cumulative_change ?? 0).toFixed(2)} {dataB?.unit}
                         </div>
                       </div>
                     </div>
@@ -557,7 +559,7 @@ export default function HotSourcePage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2.5">
-                      <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
+                      <div className="bg-[#d9d9d9] border-2 border-[#5cd466] text-slate-950 rounded-2xl p-3 shadow-sm">
                         <div className="text-xs font-black text-emerald-800">
                           {dataA?.trend.is_significant ? "SIGNIFICANT" : "NON-SIG"}
                         </div>
@@ -565,7 +567,7 @@ export default function HotSourcePage() {
                           p = {(dataA?.trend.p_value || 0).toFixed(4)}
                         </div>
                       </div>
-                      <div className="bg-[#d9d9d9] border-2 border-[#5cd466] text-slate-950 rounded-2xl p-3 shadow-sm">
+                      <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
                         <div className="text-xs font-black text-emerald-800">
                           {dataB?.trend.is_significant ? "SIGNIFICANT" : "NON-SIG"}
                         </div>
@@ -576,6 +578,24 @@ export default function HotSourcePage() {
                     </div>
                   )}
                 </div>
+
+                {/* DIVERGENCE DELTA SUMMARY (Figma Screen 4) */}
+                {isCompareMode && dataA && dataB && (
+                  <div className="p-3.5 rounded-2xl bg-[#0d220d] border border-[#235023] flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold text-white">
+                      <span>Divergence Contrast (B − A):</span>
+                      <span className="font-mono text-[#bef264]">
+                        {((dataB.trend?.sen_slope ?? 0) - (dataA.trend?.sen_slope ?? 0) >= 0 ? "+" : "")}
+                        {((dataB.trend?.sen_slope ?? 0) - (dataA.trend?.sen_slope ?? 0)).toFixed(4)} {dataA.unit}/yr
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      {(dataB.trend?.sen_slope ?? 0) > (dataA.trend?.sen_slope ?? 0)
+                        ? `${regionB?.label || "Region B"} is warming ${(Math.abs((dataB.trend?.sen_slope ?? 0) - (dataA.trend?.sen_slope ?? 0))).toFixed(4)} ${dataA.unit}/yr faster than ${regionA.label}, reflecting severe arid climate sensitivity.`
+                        : `${regionA.label} is shifting ${(Math.abs((dataA.trend?.sen_slope ?? 0) - (dataB.trend?.sen_slope ?? 0))).toFixed(4)} ${dataA.unit}/yr faster than ${regionB?.label || "Region B"}.`}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Bottom Actions Bar */}

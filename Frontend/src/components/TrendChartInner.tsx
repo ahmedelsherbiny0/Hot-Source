@@ -49,17 +49,27 @@ function SingleChartPanel({
       viewMode === "anomalies" ? p.anomaly : p.raw_value
     );
     const n = dates.length;
+    const isRaw = viewMode === "raw";
 
-    // 1. Shaded Hyperbolic 95% Confidence Band
+    const meanY = yVals.reduce((a, b) => a + b, 0) / (n || 1);
+    const annualOlsSlope = data.ols?.slope ?? 0;
+    const monthlyOlsSlope = annualOlsSlope / 12.0;
+
+    // 1. Shaded Hyperbolic 95% Confidence Band (properly aligned with scale)
     if (
       data.ols &&
       data.ols.ci_upper &&
       data.ols.ci_lower &&
       data.ols.ci_upper.length === n
     ) {
+      // If raw mode, shift anomaly bands to wrap around raw values
+      const rawOffset = isRaw ? meanY - (data.ols.intercept || 0) : 0;
+      const upperBand = data.ols.ci_upper.map((v) => v + rawOffset);
+      const lowerBand = data.ols.ci_lower.map((v) => v + rawOffset);
+
       traces.push({
         x: dates,
-        y: data.ols.ci_upper,
+        y: upperBand,
         type: "scatter",
         mode: "lines",
         line: { color: "transparent" },
@@ -69,7 +79,7 @@ function SingleChartPanel({
 
       traces.push({
         x: dates,
-        y: data.ols.ci_lower,
+        y: lowerBand,
         type: "scatter",
         mode: "lines",
         fill: "tonexty",
@@ -80,40 +90,46 @@ function SingleChartPanel({
       });
     }
 
-    // 2. Primary Observed Series
+    // 2. Primary Observed Series (Clean line with markers)
     traces.push({
       x: dates,
       y: yVals,
       type: "scatter",
       mode: "lines",
-      line: { color: lineColor, width: 2 },
+      line: { color: lineColor, width: 1.8 },
       name: `${data.region_label}`,
-      hovertemplate: `<b>%{x}</b><br>Value: %{y:.3f} ${data.unit}<extra></extra>`,
+      hovertemplate: `<b>%{x}</b><br>Observed: %{y:.3f} ${data.unit}<extra></extra>`,
     });
 
-    // 3. OLS Linear Regression
-    if (data.ols && typeof data.ols.intercept === "number" && typeof data.ols.slope === "number") {
+    // 3. OLS Linear Regression (properly annualized to monthly steps)
+    if (data.ols && typeof data.ols.intercept === "number") {
+      const olsIntercept = isRaw
+        ? meanY - monthlyOlsSlope * ((n - 1) / 2)
+        : data.ols.intercept;
+
       const olsY = dates.map(
-        (_, i) => (data.ols.intercept || 0) + (data.ols.slope || 0) * i
+        (_, i) => olsIntercept + monthlyOlsSlope * i
       );
+
       const r2Text =
         typeof data.ols.r_squared === "number" && !isNaN(data.ols.r_squared)
           ? data.ols.r_squared.toFixed(2)
           : "N/A";
+
       traces.push({
         x: dates,
         y: olsY,
         type: "scatter",
         mode: "lines",
-        line: { dash: "dash", color: "#94a3b8", width: 1.2 },
+        line: { dash: "dash", color: "#94a3b8", width: 1.4 },
         name: `OLS Fit (R²=${r2Text})`,
-        hovertemplate: `OLS: %{y:.3f} ${data.unit}<extra></extra>`,
+        hovertemplate: `OLS Fit: %{y:.3f} ${data.unit}<extra></extra>`,
       });
     }
 
     // 4. Theil-Sen Robust Slope Line
     if (data.trend && typeof data.trend.sen_slope === "number") {
-      const senPerMonth = data.trend.sen_slope / 12;
+      const senPerMonth = data.trend.sen_slope / 12.0;
       const sortedY = [...yVals].sort((a, b) => a - b);
       const medianY = sortedY[Math.floor(sortedY.length / 2)] || 0;
       const midIdx = (n - 1) / 2;
@@ -126,13 +142,13 @@ function SingleChartPanel({
         y: senY,
         type: "scatter",
         mode: "lines",
-        line: { color: isGreen ? "#22c55e" : "#84cc16", width: 2.2 },
-        name: `Theil-Sen (${sign}${data.trend.sen_slope.toFixed(3)}/yr)`,
-        hovertemplate: `Sen Slope: %{y:.3f}<extra></extra>`,
+        line: { color: isGreen ? "#22c55e" : "#bef264", width: 2.4 },
+        name: `Theil-Sen (${sign}${data.trend.sen_slope.toFixed(4)} ${data.unit}/yr)`,
+        hovertemplate: `Theil-Sen Trend: %{y:.3f} ${data.unit}<extra></extra>`,
       });
     }
 
-    // 5. MAD Outliers
+    // 5. MAD Episodic Outliers
     const outliers = data.series.filter((p) => p.is_outlier);
     if (outliers.length > 0) {
       traces.push({
@@ -148,8 +164,8 @@ function SingleChartPanel({
           size: 7,
           line: { color: "#ffffff", width: 1 },
         },
-        name: "MAD Outlier",
-        hovertemplate: `<b>Outlier Spike</b><br>%{x}: %{y:.3f}<extra></extra>`,
+        name: "MAD Outlier Spike",
+        hovertemplate: `<b>MAD Outlier Pulse</b><br>%{x}: %{y:.3f} ${data.unit}<extra></extra>`,
       });
     }
 

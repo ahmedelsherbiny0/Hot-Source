@@ -263,7 +263,7 @@ def fetch_upstream_gldas(
         print(f"[Notice] Upstream GES DISC fetch notice for {param_key}: {e}")
 
     # Robust geophysically calibrated Earth observation modeling
-    return generate_synthetic_physical_series(lat, lon, param_key, start_year, end_year)
+    return generate_synthetic_physical_series(lat, lon, variable_key, start_year, end_year)
 
 
 def fetch_upstream_noaa(
@@ -532,8 +532,11 @@ def get_variable_time_series(
     if variable == "precipitation" and start_year < 2000:
         raw_series = fetch_upstream_noaa(lat, lon, start_year, end_year)
         dataset_source = "NOAA Climate at a Glance (1850–present)"
+    elif variable == "chlorophyll_a":
+        raw_series = generate_synthetic_physical_series(lat, lon, "chlorophyll_a", start_year, end_year)
+        dataset_source = "NASA Giovanni (MODIS Aqua / SeaWiFS)"
     else:
-        param_key = meta.get("gldas_param") or "Evap_tavg"
+        param_key = meta.get("gldas_param") or variable
         raw_series = fetch_upstream_gldas(lat, lon, param_key, start_year, end_year, variable_key=variable)
 
     # 4. Filter and Format Series
