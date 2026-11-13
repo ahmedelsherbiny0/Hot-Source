@@ -3,7 +3,11 @@ from pathlib import Path
 import math
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
+try:
+    import plotly.graph_objects as go
+    HAS_PLOTLY = True
+except ImportError:
+    HAS_PLOTLY = False
 import streamlit as st
 
 # Ensure trend_detective package can be imported
@@ -175,111 +179,115 @@ dates = [p["date"] for p in processed_series]
 y_vals = [p["anomaly"] if "Anomalies" in view_mode else p["raw_value"] for p in processed_series]
 n = len(dates)
 
-fig = go.Figure()
+if HAS_PLOTLY:
+    fig = go.Figure()
 
-# 1. Shaded Hyperbolic 95% Confidence Band
-if ols and ols.get("ci_upper") and ols.get("ci_lower"):
+    # 1. Shaded Hyperbolic 95% Confidence Band
+    if ols and ols.get("ci_upper") and ols.get("ci_lower"):
+        fig.add_trace(
+            go.Scatter(
+                x=dates,
+                y=ols["ci_upper"],
+                mode="lines",
+                line=dict(color="rgba(0,0,0,0)"),
+                showlegend=False,
+                hoverinfo="skip",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=dates,
+                y=ols["ci_lower"],
+                mode="lines",
+                fill="tonexty",
+                fillcolor="rgba(74, 222, 128, 0.15)",
+                line=dict(color="rgba(0,0,0,0)"),
+                name="95% Hyperbolic CI Band",
+                hoverinfo="skip",
+            )
+        )
+
+    # 2. Primary Observed Series
     fig.add_trace(
         go.Scatter(
             x=dates,
-            y=ols["ci_upper"],
-            mode="lines",
-            line=dict(color="rgba(0,0,0,0)"),
-            showlegend=False,
-            hoverinfo="skip",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=dates,
-            y=ols["ci_lower"],
-            mode="lines",
-            fill="tonexty",
-            fillcolor="rgba(74, 222, 128, 0.15)",
-            line=dict(color="rgba(0,0,0,0)"),
-            name="95% Hyperbolic CI Band",
-            hoverinfo="skip",
+            y=y_vals,
+            mode="lines+markers",
+            line=dict(color="#4ade80", width=1.8),
+            marker=dict(size=3.5, color="#4ade80"),
+            name="Observed Series",
+            hovertemplate="<b>%{x}</b><br>Value: %{y:.3f} " + data["unit"] + "<extra></extra>",
         )
     )
 
-# 2. Primary Observed Series
-fig.add_trace(
-    go.Scatter(
-        x=dates,
-        y=y_vals,
-        mode="lines+markers",
-        line=dict(color="#4ade80", width=1.8),
-        marker=dict(size=3.5, color="#4ade80"),
-        name="Observed Series",
-        hovertemplate="<b>%{x}</b><br>Value: %{y:.3f} " + data["unit"] + "<extra></extra>",
-    )
-)
-
-# 3. OLS Linear Regression Fit
-if ols:
-    ols_y = [ols["intercept"] + ols["slope"] * i for i in range(n)]
-    fig.add_trace(
-        go.Scatter(
-            x=dates,
-            y=ols_y,
-            mode="lines",
-            line=dict(dash="dash", color="#94a3b8", width=1.5),
-            name=f"OLS Linear Fit (R² = {ols['r_squared']:.2f})",
-            hovertemplate="OLS Fit: %{y:.3f}<extra></extra>",
+    # 3. OLS Linear Regression Fit
+    if ols:
+        ols_y = [ols["intercept"] + ols["slope"] * i for i in range(n)]
+        fig.add_trace(
+            go.Scatter(
+                x=dates,
+                y=ols_y,
+                mode="lines",
+                line=dict(dash="dash", color="#94a3b8", width=1.5),
+                name=f"OLS Linear Fit (R² = {ols['r_squared']:.2f})",
+                hovertemplate="OLS Fit: %{y:.3f}<extra></extra>",
+            )
         )
-    )
 
-# 4. Theil-Sen Robust Slope Line
-if trend:
-    sen_per_month = trend["sen_slope"] / 12.0
-    sorted_y = sorted(y_vals)
-    median_y = sorted_y[len(sorted_y) // 2]
-    mid_idx = (n - 1) / 2.0
-    sen_intercept = median_y - (sen_per_month * mid_idx)
-    sen_y = [sen_intercept + (sen_per_month * i) for i in range(n)]
+    # 4. Theil-Sen Robust Slope Line
+    if trend:
+        sen_per_month = trend["sen_slope"] / 12.0
+        sorted_y = sorted(y_vals)
+        median_y = sorted_y[len(sorted_y) // 2]
+        mid_idx = (n - 1) / 2.0
+        sen_intercept = median_y - (sen_per_month * mid_idx)
+        sen_y = [sen_intercept + (sen_per_month * i) for i in range(n)]
 
-    fig.add_trace(
-        go.Scatter(
-            x=dates,
-            y=sen_y,
-            mode="lines",
-            line=dict(color="#22c55e", width=2.5),
-            name=f"Theil-Sen Trend ({trend['sen_slope']:+.4f} {data['unit']}/yr)",
-            hovertemplate="Theil-Sen: %{y:.3f}<extra></extra>",
+        fig.add_trace(
+            go.Scatter(
+                x=dates,
+                y=sen_y,
+                mode="lines",
+                line=dict(color="#22c55e", width=2.5),
+                name=f"Theil-Sen Trend ({trend['sen_slope']:+.4f} {data['unit']}/yr)",
+                hovertemplate="Theil-Sen: %{y:.3f}<extra></extra>",
+            )
         )
-    )
 
-# 5. MAD Episodic Outlier Markers
-outliers = [p for p in processed_series if p.get("is_outlier")]
-if outliers:
-    fig.add_trace(
-        go.Scatter(
-            x=[p["date"] for p in outliers],
-            y=[p["anomaly"] if "Anomalies" in view_mode else p["raw_value"] for p in outliers],
-            mode="markers",
-            marker=dict(symbol="diamond", color="#ef4444", size=8, line=dict(color="#ffffff", width=1)),
-            name=f"MAD Episodic Outlier ({len(outliers)})",
-            hovertemplate="<b>MAD Outlier Pulse</b><br>%{x}: %{y:.3f} " + data["unit"] + "<extra></extra>",
+    # 5. MAD Episodic Outlier Markers
+    outliers = [p for p in processed_series if p.get("is_outlier")]
+    if outliers:
+        fig.add_trace(
+            go.Scatter(
+                x=[p["date"] for p in outliers],
+                y=[p["anomaly"] if "Anomalies" in view_mode else p["raw_value"] for p in outliers],
+                mode="markers",
+                marker=dict(symbol="diamond", color="#ef4444", size=8, line=dict(color="#ffffff", width=1)),
+                name=f"MAD Episodic Outlier ({len(outliers)})",
+                hovertemplate="<b>MAD Outlier Pulse</b><br>%{x}: %{y:.3f} " + data["unit"] + "<extra></extra>",
+            )
         )
+
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(11, 24, 11, 0.4)",
+        font=dict(color="#cbd5e1"),
+        margin=dict(l=40, r=20, t=30, b=40),
+        xaxis=dict(gridcolor="rgba(148, 163, 184, 0.1)", zerolinecolor="rgba(148, 163, 184, 0.2)"),
+        yaxis=dict(
+            title=f"{VARIABLE_CATALOG[selected_var]['label']} ({data['unit']})",
+            gridcolor="rgba(148, 163, 184, 0.1)",
+            zerolinecolor="rgba(148, 163, 184, 0.2)",
+        ),
+        legend=dict(orientation="h", y=1.12, x=0),
+        hovermode="x unified",
+        height=500,
     )
 
-fig.update_layout(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(11, 24, 11, 0.4)",
-    font=dict(color="#cbd5e1"),
-    margin=dict(l=40, r=20, t=30, b=40),
-    xaxis=dict(gridcolor="rgba(148, 163, 184, 0.1)", zerolinecolor="rgba(148, 163, 184, 0.2)"),
-    yaxis=dict(
-        title=f"{VARIABLE_CATALOG[selected_var]['label']} ({data['unit']})",
-        gridcolor="rgba(148, 163, 184, 0.1)",
-        zerolinecolor="rgba(148, 163, 184, 0.2)",
-    ),
-    legend=dict(orientation="h", y=1.12, x=0),
-    hovermode="x unified",
-    height=500,
-)
-
-st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    df_plot = pd.DataFrame({"Date": dates, "Observed": y_vals}).set_index("Date")
+    st.line_chart(df_plot)
 
 # ==============================================================================
 # Scientific Deep-Dive Tabs

@@ -13,7 +13,15 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-from fastapi import HTTPException
+try:
+    from fastapi import HTTPException
+except ImportError:
+    class HTTPException(Exception):
+        """Fallback lightweight exception when FastAPI is not installed."""
+        def __init__(self, status_code: int, detail: Any):
+            super().__init__(str(detail))
+            self.status_code = status_code
+            self.detail = detail
 
 try:
     from api.db import get_cached_series, save_cached_series
