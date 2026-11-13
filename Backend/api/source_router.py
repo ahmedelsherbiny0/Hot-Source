@@ -318,21 +318,31 @@ def generate_synthetic_physical_series(
         # Check regional climate zones:
         # Southwest Arid Desert (Arizona, Nevada, New Mexico)
         is_desert_sw = (-118.0 <= lon <= -105.0 and 30.0 <= lat <= 38.0)
+        # Southeast US Warming Hole (Alabama, Mississippi, Georgia, Tennessee) -> Statistically Non-Significant (High p-value)
+        is_warming_hole = (-90.0 <= lon <= -82.0 and 30.0 <= lat <= 36.0)
         # Midwest Continental Plains (Kansas, Nebraska, Iowa)
-        is_continental = (-105.0 <= lon <= -85.0 and 30.0 <= lat <= 50.0)
+        is_continental = (-105.0 <= lon <= -85.0 and 36.0 <= lat <= 50.0)
 
-        if is_desert_sw:
+        if is_warming_hole:
+            base_temp = 17.5  # Southeast US temperate baseline
+            season_amp = 11.0 # Moderate summer/winter swing
+            trend_slope = 0.001 if base_trend is None else base_trend  # Near-zero trend (High p-value > 0.05)
+            noise_mult = 1.35 # Strong interannual decadal oscillation
+        elif is_desert_sw:
             base_temp = 23.2  # Warmer arid baseline for Arizona
             season_amp = 12.0
             trend_slope = 0.046 if base_trend is None else base_trend  # Strong arid warming (+0.46°C/dec)
+            noise_mult = 0.45
         elif is_continental:
             base_temp = 13.5  # Kansas continental plains
             season_amp = 14.5 # Large summer-winter swing (-2°C winter, 27°C summer)
             trend_slope = 0.024 if base_trend is None else base_trend  # Moderate continental warming (+0.24°C/dec)
+            noise_mult = 0.45
         else:
             season_amp = max(2.5, min(16.0, 3.0 + 0.28 * abs_lat + (coord_seed * 0.8)))
             # Polar amplification: higher latitudes warm faster
             trend_slope = 0.018 + (0.045 * ((abs_lat / 70.0) ** 1.8))
+            noise_mult = 0.45
             if base_trend is not None:
                 trend_slope = base_trend
 
@@ -340,7 +350,9 @@ def generate_synthetic_physical_series(
             for month in range(1, 13):
                 t = (year - start_year) + (month - 1) / 12.0
                 seasonal = math.cos(2 * math.pi * (month - phase_shift) / 12.0)
-                noise = 0.45 * math.sin(year * 11.3 + month * 19.7 + coord_seed)
+                noise = noise_mult * math.sin(year * 11.3 + month * 19.7 + coord_seed)
+                if is_warming_hole:
+                    noise += 0.6 * math.cos(year * 0.7)
                 val = round(base_temp + (season_amp * seasonal) + (trend_slope * t) + noise, 2)
                 records.append({
                     "date": f"{year:04d}-{month:02d}",

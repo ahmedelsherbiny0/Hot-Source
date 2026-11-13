@@ -67,6 +67,15 @@ const PRESET_NILE_DELTA: RegionLocation = {
   bbox: [30.5, 30.2, 31.6, 31.8],
 };
 
+const PRESET_WARMING_HOLE: RegionLocation = {
+  id: "warming_hole",
+  lat: 33.0,
+  lon: -87.0,
+  label: "SE US (WARMING HOLE)",
+  subLabel: "Alabama / Mississippi, USA (High p-value)",
+  bbox: [31.5, -89.5, 34.5, -84.5],
+};
+
 export default function HotSourcePage() {
   // Navigation / Modal States
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
@@ -254,6 +263,13 @@ export default function HotSourcePage() {
               className="px-3 py-1 rounded-full text-slate-300 hover:text-white hover:bg-[#142d14] transition-colors"
             >
               Nile Delta
+            </button>
+            <button
+              onClick={() => applyPreset(PRESET_WARMING_HOLE, undefined, "surface_temp")}
+              className="px-3 py-1 rounded-full text-amber-300 hover:text-amber-200 hover:bg-[#142d14] transition-colors"
+              title="Test non-significant trend with high p-value"
+            >
+              SE US (High p-val)
             </button>
           </div>
 
