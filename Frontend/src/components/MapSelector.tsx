@@ -8,8 +8,8 @@ import type { MapSelectorProps } from "./MapSelectorInner";
 const DynamicMap = dynamic(() => import("./MapSelectorInner"), {
   ssr: false,
   loading: () => (
-    <div className="h-72 w-full rounded-2xl border border-slate-800 bg-slate-950 flex flex-col items-center justify-center text-slate-500 text-xs">
-      <Globe className="w-8 h-8 animate-pulse text-cyan-400/50 mb-2" />
+    <div className="h-full w-full min-h-[500px] rounded-2xl border border-slate-800 bg-[#0b130b] flex flex-col items-center justify-center text-slate-400 text-xs">
+      <Globe className="w-8 h-8 animate-pulse text-green-400/50 mb-2" />
       <span>Loading Geospatial Engine...</span>
     </div>
   ),

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import { Compass, Crosshair, Layers } from "lucide-react";
+import { Crosshair, Layers } from "lucide-react";
 
 export interface RegionLocation {
   lat: number;
@@ -51,6 +51,17 @@ function createBoxLabelIcon(title: string, subLabel: string, coordsStr: string) 
   });
 }
 
+// 100% Free Public Tile URLs (Zero API key required, zero watermarks)
+const ESRI_LIGHT_BASE =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+const ESRI_LIGHT_REF =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}";
+
+const ESRI_DARK_BASE =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+const ESRI_DARK_REF =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}";
+
 export default function MapSelectorInner({
   regionA,
   regionB,
@@ -62,7 +73,8 @@ export default function MapSelectorInner({
 }: MapSelectorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const tileLayerRef = useRef<any>(null);
+  const baseTileRef = useRef<any>(null);
+  const refTileRef = useRef<any>(null);
   const bboxARef = useRef<any>(null);
   const labelARef = useRef<any>(null);
   const bboxBRef = useRef<any>(null);
@@ -80,6 +92,31 @@ export default function MapSelectorInner({
     onSelectRef.current = onSelectCoordinates;
   }, [onSelectCoordinates]);
 
+  // Helper to load Esri tile layers
+  const setTiles = (map: any, theme: "light" | "dark") => {
+    if (baseTileRef.current) {
+      map.removeLayer(baseTileRef.current);
+      baseTileRef.current = null;
+    }
+    if (refTileRef.current) {
+      map.removeLayer(refTileRef.current);
+      refTileRef.current = null;
+    }
+
+    const baseUrl = theme === "light" ? ESRI_LIGHT_BASE : ESRI_DARK_BASE;
+    const refUrl = theme === "light" ? ESRI_LIGHT_REF : ESRI_DARK_REF;
+
+    baseTileRef.current = L.tileLayer(baseUrl, {
+      maxZoom: 16,
+      attribution: "&copy; Esri, DeLorme, NAVTEQ",
+    }).addTo(map);
+
+    refTileRef.current = L.tileLayer(refUrl, {
+      maxZoom: 16,
+      pane: "overlayPane",
+    }).addTo(map);
+  };
+
   // Initialize Map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -94,16 +131,24 @@ export default function MapSelectorInner({
       attributionControl: false,
     });
 
-    // CARTO Positron (light greyscale, matching MacBook Air mockups)
-    const tileUrl =
-      mapTheme === "light"
-        ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+    // Apply Esri Light Gray Canvas (No API key needed)
+    setTiles(map, mapTheme);
 
-    tileLayerRef.current = L.tileLayer(tileUrl, {
-      subdomains: "abcd",
-      maxZoom: 19,
-    }).addTo(map);
+    // Invalidate size after rendering to guarantee map renders without blank/grey tiles
+    const timer1 = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+    const timer2 = setTimeout(() => {
+      map.invalidateSize();
+    }, 400);
+    const timer3 = setTimeout(() => {
+      map.invalidateSize();
+    }, 1000);
+
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    window.addEventListener("resize", handleResize);
 
     // Click handler
     map.on("click", (e: any) => {
@@ -115,6 +160,10 @@ export default function MapSelectorInner({
     mapRef.current = map;
 
     return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      window.removeEventListener("resize", handleResize);
       map.remove();
       mapRef.current = null;
     };
@@ -122,17 +171,8 @@ export default function MapSelectorInner({
 
   // Handle tile theme toggle
   useEffect(() => {
-    if (!mapRef.current || !tileLayerRef.current) return;
-    mapRef.current.removeLayer(tileLayerRef.current);
-    const tileUrl =
-      mapTheme === "light"
-        ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-
-    tileLayerRef.current = L.tileLayer(tileUrl, {
-      subdomains: "abcd",
-      maxZoom: 19,
-    }).addTo(mapRef.current);
+    if (!mapRef.current) return;
+    setTiles(mapRef.current, mapTheme);
   }, [mapTheme]);
 
   // Update Region A (Green)
@@ -248,9 +288,16 @@ export default function MapSelectorInner({
   ]);
 
   return (
-    <div className={`relative w-full h-full ${className}`}>
+    <div
+      className={`relative w-full h-full min-h-[500px] ${className}`}
+      style={{ minHeight: "500px", height: "100%", width: "100%" }}
+    >
       {/* Leaflet map container */}
-      <div ref={containerRef} className="w-full h-full" />
+      <div
+        ref={containerRef}
+        className="w-full h-full min-h-[500px]"
+        style={{ minHeight: "500px", height: "100%", width: "100%" }}
+      />
 
       {/* Floating Coordinate Badges on Map */}
       <div className="absolute top-4 left-4 z-[400] flex items-center gap-2 pointer-events-auto">
