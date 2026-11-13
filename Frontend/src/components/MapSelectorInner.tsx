@@ -5,6 +5,7 @@ import L from "leaflet";
 import { Crosshair, Layers } from "lucide-react";
 
 export interface RegionLocation {
+  id?: string;
   lat: number;
   lon: number;
   label?: string;

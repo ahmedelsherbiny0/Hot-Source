@@ -23,6 +23,7 @@ import type { RegionLocation } from "@/components/MapSelectorInner";
 
 // Pre-calibrated regional presets
 const PRESET_KANSAS: RegionLocation = {
+  id: "kansas",
   lat: 38.5,
   lon: -98.0,
   label: "KANSAS",
@@ -31,6 +32,7 @@ const PRESET_KANSAS: RegionLocation = {
 };
 
 const PRESET_ARIZONA: RegionLocation = {
+  id: "arizona",
   lat: 34.0,
   lon: -111.8,
   label: "ARIZONA",
@@ -39,6 +41,7 @@ const PRESET_ARIZONA: RegionLocation = {
 };
 
 const PRESET_PEARL_RIVER: RegionLocation = {
+  id: "pearl_river",
   lat: 22.15,
   lon: 113.7,
   label: "PEARL RIVER",
@@ -47,6 +50,7 @@ const PRESET_PEARL_RIVER: RegionLocation = {
 };
 
 const PRESET_MISSISSIPPI: RegionLocation = {
+  id: "mississippi_west",
   lat: 29.05,
   lon: -90.1,
   label: "MISSISSIPPI WEST",
@@ -55,6 +59,7 @@ const PRESET_MISSISSIPPI: RegionLocation = {
 };
 
 const PRESET_NILE_DELTA: RegionLocation = {
+  id: "nile_delta",
   lat: 31.05,
   lon: 31.0,
   label: "NILE DELTA",
@@ -125,6 +130,7 @@ export default function HotSourcePage() {
         start_year: startYear,
         end_year: endYear,
         season: "all",
+        region_id: regionA.id,
       });
       setDataA(resA);
 
@@ -137,6 +143,7 @@ export default function HotSourcePage() {
           start_year: startYear,
           end_year: endYear,
           season: "all",
+          region_id: regionB.id,
         });
         setDataB(resB);
       } else {
