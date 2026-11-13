@@ -14,6 +14,7 @@ import {
 import MapSelector from "@/components/MapSelector";
 import TrendChart from "@/components/TrendChart";
 import ScanModal from "@/components/ScanModal";
+import DayMonthYearPicker from "@/components/DayMonthYearPicker";
 import { analyzeVariable } from "@/lib/api";
 import {
   TrendAnalysisResponse,
@@ -76,9 +77,9 @@ export default function HotSourcePage() {
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [activePinTarget, setActivePinTarget] = useState<"A" | "B">("A");
 
-  // Query Parameters
-  const [startDate, setStartDate] = useState("2003-01");
-  const [endDate, setEndDate] = useState("2025-12");
+  // Query Parameters (Day, Month, Year)
+  const [startDate, setStartDate] = useState("2003-01-01");
+  const [endDate, setEndDate] = useState("2025-12-31");
   const [selectedTrend, setSelectedTrend] = useState("surface_temp");
   const [viewMode, setViewMode] = useState<"anomalies" | "raw">("anomalies");
 
@@ -117,6 +118,12 @@ export default function HotSourcePage() {
   const handleCalculate = async () => {
     setIsLoading(true);
     setErrorMessage(null);
+
+    if (startDate > endDate) {
+      setErrorMessage("Start date cannot be after end date. Please adjust your time range.");
+      setIsLoading(false);
+      return;
+    }
 
     const startYear = parseInt(startDate.split("-")[0], 10) || 2003;
     const endYear = parseInt(endDate.split("-")[0], 10) || 2025;
@@ -295,23 +302,24 @@ export default function HotSourcePage() {
                 </span>
               </div>
 
-              {/* Time Range */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-300 min-w-[80px]">
-                  Time Range:
-                </span>
-                <input
-                  type="text"
+              {/* Time Range (Day, Month, Year Selection) */}
+              <div className="flex flex-col gap-3 p-3.5 rounded-2xl bg-[#0d1e0d] border border-[#1b3d1b]">
+                <DayMonthYearPicker
+                  label="Start Date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-24 text-center text-xs font-bold font-mono bg-[#d9d9d9] text-slate-900 rounded-full py-1.5 px-2.5 focus:outline-none shadow-sm"
+                  onChange={setStartDate}
+                  minYear={1980}
+                  maxYear={2026}
                 />
-                <span className="text-xs text-slate-400">To</span>
-                <input
-                  type="text"
+
+                <div className="border-t border-[#1b3d1b]/60 my-0.5" />
+
+                <DayMonthYearPicker
+                  label="End Date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-24 text-center text-xs font-bold font-mono bg-[#d9d9d9] text-slate-900 rounded-full py-1.5 px-2.5 focus:outline-none shadow-sm"
+                  onChange={setEndDate}
+                  minYear={1980}
+                  maxYear={2026}
                 />
               </div>
 
@@ -389,8 +397,13 @@ export default function HotSourcePage() {
               <div className="flex flex-col gap-4">
                 {/* Header with Back button */}
                 <div className="flex items-center justify-between border-b border-[#1b3d1b] pb-3">
-                  <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                    {isCompareMode ? "Divergence Assessment" : "Trend Verdict"}
+                  <div>
+                    <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                      {isCompareMode ? "Divergence Assessment" : "Trend Verdict"}
+                    </div>
+                    <div className="text-[10px] font-mono text-[#5cd466] mt-0.5">
+                      Period: {startDate} &rarr; {endDate}
+                    </div>
                   </div>
                   <button
                     onClick={() => setIsCalculated(false)}
