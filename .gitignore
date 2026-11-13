@@ -37,6 +37,8 @@ out/
 build/
 .pnp
 .pnp.js
+*.tsbuildinfo
+next-env.d.ts
 
 # Testing & Coverage
 .pytest_cache/
