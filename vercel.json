@@ -5,6 +5,10 @@
     "api/index.py": {
       "maxDuration": 60,
       "memory": 1024
+    },
+    "Backend/api/index.py": {
+      "maxDuration": 60,
+      "memory": 1024
     }
   },
   "rewrites": [
