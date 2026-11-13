@@ -172,15 +172,17 @@ def compute_mann_kendall_trend(
             res = mk.original_test(values)
             test_name = "Standard Mann-Kendall"
 
-        raw_slope = float(res.slope)
-        p_val = float(res.p)
+        raw_slope = float(res.slope) if res.slope is not None and not math.isnan(res.slope) else 0.0
+        p_val = float(res.p) if res.p is not None and not math.isnan(res.p) else 1.0
         z_stat = float(getattr(res, "z", 0.0))
+        if math.isnan(z_stat):
+            z_stat = 0.0
     except Exception as e:
         # Fallback to standard Theil-Sen slope via scipy if mk encounters numerical degeneracy
         print(f"[Notice] PyMannKendall calculation fallback: {e}")
         time_steps = np.arange(n)
         res_sen = stats.theilslopes(values, time_steps)
-        raw_slope = float(res_sen.slope)
+        raw_slope = float(res_sen.slope) if not math.isnan(res_sen.slope) else 0.0
         p_val = 1.0
         z_stat = 0.0
         test_name = "Standard Mann-Kendall"
@@ -357,7 +359,8 @@ def benjamini_hochberg_fdr(
     Avoids statsmodels to comply with serverless bundle limits.
     Returns: (adjusted_p_values, is_significant_boolean_array)
     """
-    p_arr = np.asarray(p_values, dtype=float)
+    raw_arr = np.asarray(p_values, dtype=float)
+    p_arr = np.nan_to_num(raw_arr, nan=1.0)
     m = len(p_arr)
     if m == 0:
         return np.array([]), np.array([], dtype=bool)
@@ -372,7 +375,7 @@ def benjamini_hochberg_fdr(
 
     # Step-up cumulative minimum from end to beginning
     adj_p = np.minimum.accumulate(adj_p[::-1])[::-1]
-    adj_p = np.clip(adj_p, 0.0, 1.0)
+    adj_p = np.clip(np.nan_to_num(adj_p, nan=1.0), 0.0, 1.0)
 
     # Restore original order
     final_adj_p = np.empty(m, dtype=float)
