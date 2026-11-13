@@ -2,10 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "functions": {
-    "api/index.py": {
-      "maxDuration": 60,
-      "memory": 1024
-    },
     "Backend/api/index.py": {
       "maxDuration": 60,
       "memory": 1024
@@ -14,7 +10,7 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "/api/index.py"
+      "destination": "/Backend/api/index.py"
     }
   ]
 }
