@@ -92,23 +92,27 @@ function SingleChartPanel({
     });
 
     // 3. OLS Linear Regression
-    if (data.ols) {
+    if (data.ols && typeof data.ols.intercept === "number" && typeof data.ols.slope === "number") {
       const olsY = dates.map(
-        (_, i) => data.ols.intercept + data.ols.slope * i
+        (_, i) => (data.ols.intercept || 0) + (data.ols.slope || 0) * i
       );
+      const r2Text =
+        typeof data.ols.r_squared === "number" && !isNaN(data.ols.r_squared)
+          ? data.ols.r_squared.toFixed(2)
+          : "N/A";
       traces.push({
         x: dates,
         y: olsY,
         type: "scatter",
         mode: "lines",
         line: { dash: "dash", color: "#94a3b8", width: 1.2 },
-        name: `OLS Fit (R²=${data.ols.r_squared.toFixed(2)})`,
+        name: `OLS Fit (R²=${r2Text})`,
         hovertemplate: `OLS: %{y:.3f} ${data.unit}<extra></extra>`,
       });
     }
 
     // 4. Theil-Sen Robust Slope Line
-    if (data.trend) {
+    if (data.trend && typeof data.trend.sen_slope === "number") {
       const senPerMonth = data.trend.sen_slope / 12;
       const sortedY = [...yVals].sort((a, b) => a - b);
       const medianY = sortedY[Math.floor(sortedY.length / 2)] || 0;
@@ -198,8 +202,8 @@ function SingleChartPanel({
           )}
         </div>
         <div className="text-[10px] text-slate-300 font-mono">
-          Sen&apos;s Slope: {data.trend.sen_slope >= 0 ? "+" : ""}
-          {data.trend.sen_slope.toFixed(4)} {data.unit}/yr
+          Sen&apos;s Slope: {(data.trend?.sen_slope ?? 0) >= 0 ? "+" : ""}
+          {(data.trend?.sen_slope ?? 0).toFixed(4)} {data.unit}/yr
         </div>
       </div>
 

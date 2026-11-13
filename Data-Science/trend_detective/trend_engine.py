@@ -234,9 +234,10 @@ def compute_ols_hyperbolic_bands(
 
     # Fit OLS
     reg = stats.linregress(time_steps, values)
-    slope = float(reg.slope)
-    intercept = float(reg.intercept)
-    r_squared = round(float(reg.rvalue ** 2), 4)
+    slope = float(reg.slope) if not (math.isnan(reg.slope) or math.isinf(reg.slope)) else 0.0
+    intercept = float(reg.intercept) if not (math.isnan(reg.intercept) or math.isinf(reg.intercept)) else 0.0
+    r_val = float(reg.rvalue) if not (math.isnan(reg.rvalue) or math.isinf(reg.rvalue)) else 0.0
+    r_squared = round(float(r_val ** 2), 4)
 
     # Fitted values
     y_hat = slope * time_steps + intercept
@@ -256,8 +257,10 @@ def compute_ols_hyperbolic_bands(
 
     # Compute hyperbolic band array
     margin = t_crit * s_e * np.sqrt((1.0 / n) + ((time_steps - mean_t) ** 2) / s_tt)
-    ci_upper = np.round(y_hat + margin, 3).tolist()
-    ci_lower = np.round(y_hat - margin, 3).tolist()
+    raw_ci_upper = np.round(y_hat + margin, 3).tolist()
+    raw_ci_lower = np.round(y_hat - margin, 3).tolist()
+    ci_upper = [0.0 if (math.isnan(x) or math.isinf(x)) else x for x in raw_ci_upper]
+    ci_lower = [0.0 if (math.isnan(x) or math.isinf(x)) else x for x in raw_ci_lower]
 
     annual_ols_slope = round(slope * 12.0 if is_monthly else slope, 4)
 

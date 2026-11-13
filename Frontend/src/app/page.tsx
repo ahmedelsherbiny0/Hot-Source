@@ -426,9 +426,9 @@ export default function HotSourcePage() {
                         {dataA?.variable_name.replace(/_/g, " ") || "Temperature"}
                       </div>
                       <div className="text-xs font-semibold text-slate-700 mt-0.5">
-                        {dataA?.trend.sen_slope && dataA.trend.sen_slope > 0
-                          ? `Increasing (+${(dataA.trend.sen_slope * 10).toFixed(2)} ${dataA.unit} / decade)`
-                          : `Decreasing (${(dataA?.trend.sen_slope || 0) * 10} ${dataA?.unit} / decade)`}
+                        {(dataA?.trend?.sen_slope ?? 0) > 0
+                          ? `Increasing (+${((dataA?.trend?.sen_slope ?? 0) * 10).toFixed(2)} ${dataA?.unit || ""} / decade)`
+                          : `Decreasing (${((dataA?.trend?.sen_slope ?? 0) * 10).toFixed(2)} ${dataA?.unit || ""} / decade)`}
                       </div>
                     </div>
                   ) : (
@@ -501,32 +501,32 @@ export default function HotSourcePage() {
                   {!isCompareMode ? (
                     <div className="bg-[#d9d9d9] text-slate-950 rounded-2xl p-4 shadow-sm">
                       <div className="text-base font-black">
-                        {dataA?.trend.sen_slope && dataA.trend.sen_slope > 0 ? "+" : ""}
-                        {dataA?.trend.sen_slope.toFixed(4)} {dataA?.unit}/yr
+                        {(dataA?.trend?.sen_slope ?? 0) > 0 ? "+" : ""}
+                        {(dataA?.trend?.sen_slope ?? 0).toFixed(4)} {dataA?.unit}/yr
                       </div>
                       <div className="text-xs font-semibold text-slate-700 mt-0.5">
-                        Cumulative: {dataA?.trend.cumulative_change && dataA.trend.cumulative_change > 0 ? "+" : ""}
-                        {dataA?.trend.cumulative_change.toFixed(3)} {dataA?.unit}
+                        Cumulative: {(dataA?.trend?.cumulative_change ?? 0) > 0 ? "+" : ""}
+                        {(dataA?.trend?.cumulative_change ?? 0).toFixed(3)} {dataA?.unit}
                       </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
                         <div className="text-xs font-black">
-                          {dataA?.trend.sen_slope && dataA.trend.sen_slope > 0 ? "+" : ""}
-                          {(dataA?.trend.sen_slope || 0).toFixed(4)}
+                          {(dataA?.trend?.sen_slope ?? 0) > 0 ? "+" : ""}
+                          {(dataA?.trend?.sen_slope ?? 0).toFixed(4)}
                         </div>
                         <div className="text-[10px] font-semibold text-slate-700">
-                          Δ: {(dataA?.trend.cumulative_change || 0).toFixed(2)} {dataA?.unit}
+                          Δ: {(dataA?.trend?.cumulative_change ?? 0).toFixed(2)} {dataA?.unit}
                         </div>
                       </div>
                       <div className="bg-[#d9d9d9] border-2 border-[#5cd466] text-slate-950 rounded-2xl p-3 shadow-sm">
                         <div className="text-xs font-black">
-                          {dataB?.trend.sen_slope && dataB.trend.sen_slope > 0 ? "+" : ""}
-                          {(dataB?.trend.sen_slope || 0).toFixed(4)}
+                          {(dataB?.trend?.sen_slope ?? 0) > 0 ? "+" : ""}
+                          {(dataB?.trend?.sen_slope ?? 0).toFixed(4)}
                         </div>
                         <div className="text-[10px] font-semibold text-slate-700">
-                          Δ: {(dataB?.trend.cumulative_change || 0).toFixed(2)} {dataB?.unit}
+                          Δ: {(dataB?.trend?.cumulative_change ?? 0).toFixed(2)} {dataB?.unit}
                         </div>
                       </div>
                     </div>
@@ -543,14 +543,14 @@ export default function HotSourcePage() {
                       <div className="flex items-center gap-2">
                         <span className="font-black text-sm text-emerald-700 flex items-center gap-1">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          {dataA?.trend.is_significant ? "Statistically Significant" : "Not Significant"}
+                          {dataA?.trend?.is_significant ? "Statistically Significant" : "Not Significant"}
                         </span>
                         <span className="text-xs font-mono font-bold text-slate-600">
-                          (p = {dataA?.trend.p_value.toFixed(4)})
+                          (p = {(dataA?.trend?.p_value ?? 1).toFixed(4)})
                         </span>
                       </div>
                       <div className="text-[11px] font-semibold text-slate-600 mt-1">
-                        {dataA?.trend.test_used} • Cohen&apos;s d: {dataA?.trend.cohens_d.toFixed(2)}
+                        {dataA?.trend?.test_used || "Mann-Kendall"} • Cohen&apos;s d: {(dataA?.trend?.cohens_d ?? 0).toFixed(2)}
                       </div>
                     </div>
                   ) : (
@@ -690,7 +690,7 @@ export default function HotSourcePage() {
                     {dataA.physical_driver?.coupling_strength || "Strong"} Coupling
                   </span>
                   <span className="font-mono text-slate-300">
-                    r = {dataA.physical_driver?.correlation_r.toFixed(2) || "+0.68"}
+                    r = {typeof dataA.physical_driver?.correlation_r === "number" ? dataA.physical_driver.correlation_r.toFixed(2) : "+0.68"}
                   </span>
                 </div>
               </div>

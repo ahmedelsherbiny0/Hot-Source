@@ -165,26 +165,26 @@ export default function ScanModal({
                         <td className="py-3.5 px-4">
                           <span
                             className={
-                              item.sen_slope > 0
+                              (item.sen_slope ?? 0) > 0
                                 ? "text-emerald-400"
-                                : item.sen_slope < 0
+                                : (item.sen_slope ?? 0) < 0
                                 ? "text-amber-400"
                                 : "text-slate-400"
                             }
                           >
-                            {item.sen_slope > 0 ? "+" : ""}
-                            {item.sen_slope.toFixed(4)}
+                            {(item.sen_slope ?? 0) > 0 ? "+" : ""}
+                            {(item.sen_slope ?? 0).toFixed(4)}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-slate-200">
-                          {item.cumulative_change > 0 ? "+" : ""}
-                          {item.cumulative_change.toFixed(3)}
+                          {(item.cumulative_change ?? 0) > 0 ? "+" : ""}
+                          {(item.cumulative_change ?? 0).toFixed(3)}
                         </td>
                         <td className="py-3.5 px-4 text-slate-400">
-                          {item.raw_p_value.toFixed(4)}
+                          {(item.raw_p_value ?? 1).toFixed(4)}
                         </td>
                         <td className="py-3.5 px-4 text-slate-300 font-bold">
-                          {item.fdr_p_value.toFixed(4)}
+                          {(item.fdr_p_value ?? 1).toFixed(4)}
                         </td>
                         <td className="py-3.5 px-4 text-center font-sans">
                           {item.is_significant ? (
