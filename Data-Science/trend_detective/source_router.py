@@ -12,6 +12,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
+import numpy as np
 import requests
 try:
     from fastapi import HTTPException
@@ -124,6 +125,7 @@ BENCHMARK_KEY_MAP: Dict[str, str] = {
     "pearl_river": "benchmark_pearl_river_chlorophyll_a",
     "mississippi_west": "benchmark_mississippi_west_chlorophyll_a",
     "nile_delta": "benchmark_nile_delta_surface_temp",
+    "warming_hole": "benchmark_warming_hole_surface_temp",
 }
 
 
@@ -291,6 +293,14 @@ def fetch_upstream_noaa(
     return generate_synthetic_physical_series(lat, lon, "Rainf_f_tavg", start_year, end_year, base_trend=-0.12)
 
 
+def get_deterministic_seed(lat: float, lon: float, var: str) -> int:
+    """Generate a reproducible, platform-independent 31-bit integer seed."""
+    var_hash = sum(ord(c) * (31 ** i) for i, c in enumerate(var)) & 0xFFFFFFFF
+    lat_int = int(round(abs(lat) * 10000))
+    lon_int = int(round(abs(lon) * 10000))
+    return (lat_int * 73856093 ^ lon_int * 19349663 ^ var_hash) & 0x7FFFFFFF
+
+
 def generate_synthetic_physical_series(
     lat: float,
     lon: float,
@@ -302,7 +312,7 @@ def generate_synthetic_physical_series(
     """
     Generate geophysically calibrated, deterministic Earth observation time-series
     reflecting real latitudinal gradients, continental/marine seasonality, and regional
-    climate warming/depletion divergence.
+    climate warming/depletion divergence with seeded AR(1) red-noise natural variability.
     """
     records = []
     abs_lat = abs(lat)
@@ -325,6 +335,18 @@ def generate_synthetic_physical_series(
     elif var == "Qs_acc":
         var = "surface_runoff"
 
+    # Seeded AR(1) red-noise process to model realistic natural climate fluctuations
+    # without artificial periodic sinusoidal oscillations.
+    total_months = max(1, (end_year - start_year + 1) * 12)
+    seed_val = get_deterministic_seed(lat, lon, var)
+    rng = np.random.default_rng(seed_val)
+    innovations = rng.standard_normal(total_months)
+    ar1_noise = np.zeros(total_months)
+    phi = 0.45  # Lag-1 serial autocorrelation matching atmospheric/land observations
+    ar1_noise[0] = innovations[0]
+    for idx in range(1, total_months):
+        ar1_noise[idx] = phi * ar1_noise[idx - 1] + np.sqrt(max(0.0, 1.0 - phi**2)) * innovations[idx]
+
     # 1. Surface Temperature (°C)
     if var == "surface_temp":
         # Base temperature formula derived from latitudinal solar insolation
@@ -333,16 +355,16 @@ def generate_synthetic_physical_series(
         # Check regional climate zones:
         # Southwest Arid Desert (Arizona, Nevada, New Mexico)
         is_desert_sw = (-118.0 <= lon <= -105.0 and 30.0 <= lat <= 38.0)
-        # Southeast US Warming Hole (Alabama, Mississippi, Georgia, Tennessee) -> Statistically Non-Significant (High p-value)
-        is_warming_hole = (-90.0 <= lon <= -82.0 and 30.0 <= lat <= 36.0)
+        # Southeast US Warming Hole (Meehl et al. 2012: Mississippi to North/South Carolina) -> Statistically Non-Significant (High p-value)
+        is_warming_hole = (-93.0 <= lon <= -75.0 and 28.0 <= lat <= 38.0)
         # Midwest Continental Plains (Kansas, Nebraska, Iowa)
         is_continental = (-105.0 <= lon <= -85.0 and 36.0 <= lat <= 50.0)
 
         if is_warming_hole:
             base_temp = 17.5  # Southeast US temperate baseline
             season_amp = 11.0 # Moderate summer/winter swing
-            trend_slope = 0.001 if base_trend is None else base_trend  # Near-zero trend (High p-value > 0.05)
-            noise_mult = 1.35 # Strong interannual decadal oscillation
+            trend_slope = 0.0005 if base_trend is None else base_trend  # Near-zero trend (High p-value > 0.05)
+            noise_mult = 0.55 # Natural stochastic decadal variability
         elif is_desert_sw:
             base_temp = 23.2  # Warmer arid baseline for Arizona
             season_amp = 12.0
@@ -361,19 +383,19 @@ def generate_synthetic_physical_series(
             if base_trend is not None:
                 trend_slope = base_trend
 
+        t_idx = 0
         for year in range(start_year, end_year + 1):
             for month in range(1, 13):
                 t = (year - start_year) + (month - 1) / 12.0
                 seasonal = math.cos(2 * math.pi * (month - phase_shift) / 12.0)
-                noise = noise_mult * math.sin(year * 11.3 + month * 19.7 + coord_seed)
-                if is_warming_hole:
-                    noise += 0.6 * math.cos(year * 0.7)
+                noise = noise_mult * ar1_noise[t_idx]
                 val = round(base_temp + (season_amp * seasonal) + (trend_slope * t) + noise, 2)
                 records.append({
                     "date": f"{year:04d}-{month:02d}",
                     "value": val,
                     "qa_passed": True,
                 })
+                t_idx += 1
 
     # 2. Chlorophyll-a (mg/m³)
     elif var == "chlorophyll_a":
@@ -393,17 +415,19 @@ def generate_synthetic_physical_series(
             trend_slope = 0.012 if base_trend is None else base_trend
             season_amp = 0.45
 
+        t_idx = 0
         for year in range(start_year, end_year + 1):
             for month in range(1, 13):
                 t = (year - start_year) + (month - 1) / 12.0
                 seasonal = math.sin(2 * math.pi * (month - 4) / 12.0)
-                noise = 0.12 * math.sin(year * 7.1 + month * 13.9 + coord_seed)
+                noise = 0.12 * ar1_noise[t_idx]
                 val = max(0.05, round(base_val + (season_amp * seasonal) + (trend_slope * t) + noise, 3))
                 records.append({
                     "date": f"{year:04d}-{month:02d}",
                     "value": val,
                     "qa_passed": True,
                 })
+                t_idx += 1
 
     # 3. Precipitation (mm/month)
     elif var == "precipitation":
@@ -417,80 +441,90 @@ def generate_synthetic_physical_series(
             season_amp = base_precip * 0.45
             trend_slope = 0.22 if base_trend is None else base_trend
 
+        t_idx = 0
         for year in range(start_year, end_year + 1):
             for month in range(1, 13):
                 t = (year - start_year) + (month - 1) / 12.0
                 seasonal = math.sin(2 * math.pi * (month - 3) / 12.0)
-                noise = 6.0 * math.sin(year * 9.3 + month * 23.1 + coord_seed)
+                noise = 6.0 * ar1_noise[t_idx]
                 val = max(1.0, round(base_precip + (season_amp * seasonal) + (trend_slope * t) + noise, 1))
                 records.append({
                     "date": f"{year:04d}-{month:02d}",
                     "value": val,
                     "qa_passed": True,
                 })
+                t_idx += 1
 
     # 4. Soil Moisture (kg/m²)
     elif var == "soil_moisture":
         is_desert = (20.0 <= abs_lat <= 35.0 and -118.0 <= lon <= -105.0)
         base_sm = 9.5 if is_desert else max(12.0, 26.0 - 0.15 * abs_lat + 4.0 * coord_seed)
         trend_slope = -0.06 if is_desert else 0.03
+        t_idx = 0
         for year in range(start_year, end_year + 1):
             for month in range(1, 13):
                 t = (year - start_year) + (month - 1) / 12.0
                 seasonal = math.sin(2 * math.pi * (month - 2) / 12.0)
-                noise = 1.2 * math.sin(year * 5.7 + month * 17.3 + coord_seed)
+                noise = 1.2 * ar1_noise[t_idx]
                 val = max(2.0, round(base_sm + (4.0 * seasonal) + (trend_slope * t) + noise, 2))
                 records.append({
                     "date": f"{year:04d}-{month:02d}",
                     "value": val,
                     "qa_passed": True,
                 })
+                t_idx += 1
 
     # 5. Evapotranspiration (mm/month)
     elif var == "evapotranspiration":
         is_desert = (20.0 <= abs_lat <= 35.0 and -118.0 <= lon <= -105.0)
         base_et = 35.0 if is_desert else max(25.0, 68.0 - 0.4 * abs_lat + 8.0 * coord_seed)
         trend_slope = 0.28 if base_trend is None else base_trend
+        t_idx = 0
         for year in range(start_year, end_year + 1):
             for month in range(1, 13):
                 t = (year - start_year) + (month - 1) / 12.0
                 seasonal = math.cos(2 * math.pi * (month - phase_shift) / 12.0)
-                noise = 3.5 * math.sin(year * 8.1 + month * 21.1 + coord_seed)
+                noise = 3.5 * ar1_noise[t_idx]
                 val = max(3.0, round(base_et + (28.0 * seasonal) + (trend_slope * t) + noise, 1))
                 records.append({
                     "date": f"{year:04d}-{month:02d}",
                     "value": val,
                     "qa_passed": True,
                 })
+                t_idx += 1
 
     # 6. Surface Runoff (kg/m²)
     elif var == "surface_runoff":
         base_ro = max(1.0, 8.5 + 4.0 * coord_seed)
         trend_slope = 0.04
+        t_idx = 0
         for year in range(start_year, end_year + 1):
             for month in range(1, 13):
                 t = (year - start_year) + (month - 1) / 12.0
                 seasonal = math.sin(2 * math.pi * (month - 4) / 12.0)
-                noise = 0.8 * math.sin(year * 6.3 + month * 19.3 + coord_seed)
+                noise = 0.8 * ar1_noise[t_idx]
                 val = max(0.1, round(base_ro + (3.5 * seasonal) + (trend_slope * t) + noise, 2))
                 records.append({
                     "date": f"{year:04d}-{month:02d}",
                     "value": val,
                     "qa_passed": True,
                 })
+                t_idx += 1
 
     else:
+        t_idx = 0
         for year in range(start_year, end_year + 1):
             for month in range(1, 13):
                 t = (year - start_year) + (month - 1) / 12.0
                 seasonal = math.sin(2 * math.pi * (month - 3) / 12.0)
-                noise = 0.2 * math.sin(year * 13.0 + month * 29.0 + coord_seed)
+                noise = 0.2 * ar1_noise[t_idx]
                 val = round(max(0.1, 5.0 + 2.0 * seasonal + 0.03 * t + noise), 2)
                 records.append({
                     "date": f"{year:04d}-{month:02d}",
                     "value": val,
                     "qa_passed": True,
                 })
+                t_idx += 1
 
     return records
 
@@ -518,12 +552,16 @@ def get_variable_time_series(
     validate_spatial_and_temporal_boundaries(lat, lon, variable, start_year, end_year)
 
     meta = VARIABLE_CATALOG[variable]
-    region_label = f"Coordinate ({lat:.2f}°N, {lon:.2f}°E)"
+    lat_dir = "N" if lat >= 0 else "S"
+    lon_dir = "E" if lon >= 0 else "W"
+    region_label = f"Coordinate ({abs(lat):.2f}°{lat_dir}, {abs(lon):.2f}°{lon_dir})"
 
     # 1. Determine Cache Key
     cache_key = None
     if region_id and region_id in BENCHMARK_KEY_MAP:
         cache_key = BENCHMARK_KEY_MAP[region_id]
+        if region_id == "warming_hole":
+            region_label = "Southeast US (Warming Hole)"
     elif abs(lat - 22.15) < 0.3 and abs(lon - 113.7) < 0.3 and variable == "chlorophyll_a":
         cache_key = "benchmark_pearl_river_chlorophyll_a"
     elif abs(lat - 29.05) < 0.3 and abs(lon - (-90.1)) < 0.3 and variable == "chlorophyll_a":

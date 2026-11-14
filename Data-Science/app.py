@@ -74,7 +74,9 @@ else:
     lat = preset["lat"]
     lon = preset["lon"]
     region_id = preset["id"]
-    st.sidebar.info(f"Coordinates: **{lat:.2f}°N, {lon:.2f}°E**")
+    lat_dir = "N" if lat >= 0 else "S"
+    lon_dir = "E" if lon >= 0 else "W"
+    st.sidebar.info(f"Coordinates: **{abs(lat):.2f}°{lat_dir}, {abs(lon):.2f}°{lon_dir}**")
 
 variable_options = {
     "surface_temp": "Land Surface Temperature (°C)",

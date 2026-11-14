@@ -213,7 +213,11 @@ function SingleChartPanel({
           <span className="text-white">↑</span>
           {labelPrefix && (
             <span className="text-[11px] font-medium text-slate-300 ml-1">
-              ({labelPrefix})
+              {labelPrefix.startsWith("Coordinate")
+                ? `(${labelPrefix.replace(/^Coordinate\s*\((.*?)\)$/, "$1")})`
+                : labelPrefix.startsWith("(")
+                ? labelPrefix
+                : `(${labelPrefix})`}
             </span>
           )}
         </div>

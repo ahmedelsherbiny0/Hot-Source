@@ -561,10 +561,17 @@ export default function HotSourcePage() {
                   {!isCompareMode ? (
                     <div className="bg-[#d9d9d9] text-slate-950 rounded-2xl p-4 shadow-sm">
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-sm text-emerald-700 flex items-center gap-1">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          {dataA?.trend?.is_significant ? "Statistically Significant" : "Not Significant"}
-                        </span>
+                        {dataA?.trend?.is_significant ? (
+                          <span className="font-black text-sm text-emerald-700 flex items-center gap-1">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            Statistically Significant
+                          </span>
+                        ) : (
+                          <span className="font-black text-sm text-amber-800 flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                            Not Significant
+                          </span>
+                        )}
                         <span className="text-xs font-mono font-bold text-slate-600">
                           (p = {(dataA?.trend?.p_value ?? 1).toFixed(4)})
                         </span>
@@ -576,7 +583,7 @@ export default function HotSourcePage() {
                   ) : (
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className="bg-[#d9d9d9] border-2 border-[#5cd466] text-slate-950 rounded-2xl p-3 shadow-sm">
-                        <div className="text-xs font-black text-emerald-800">
+                        <div className={`text-xs font-black ${dataA?.trend.is_significant ? "text-emerald-800" : "text-amber-800"}`}>
                           {dataA?.trend.is_significant ? "SIGNIFICANT" : "NON-SIG"}
                         </div>
                         <div className="text-[10px] font-mono text-slate-700">
@@ -584,7 +591,7 @@ export default function HotSourcePage() {
                         </div>
                       </div>
                       <div className="bg-[#d9d9d9] border-2 border-[#a3e635] text-slate-950 rounded-2xl p-3 shadow-sm">
-                        <div className="text-xs font-black text-emerald-800">
+                        <div className={`text-xs font-black ${dataB?.trend.is_significant ? "text-emerald-800" : "text-amber-800"}`}>
                           {dataB?.trend.is_significant ? "SIGNIFICANT" : "NON-SIG"}
                         </div>
                         <div className="text-[10px] font-mono text-slate-700">
