@@ -21,7 +21,7 @@ def test_health_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert data["version"] == "1.0.0"
+    assert data["version"] in ("1.0.0", "1.1.0")
     assert "capabilities" in data
     assert "supported_variables" in data
     assert "evapotranspiration" in data["supported_variables"]

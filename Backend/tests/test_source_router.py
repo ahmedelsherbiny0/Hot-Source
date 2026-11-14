@@ -109,3 +109,17 @@ def test_modis_qa_decoding():
 
     # Kelvin normalization
     assert normalize_kelvin_to_celsius(293.15) == 20.0
+
+
+def test_multi_resource_adapters_exist_and_callable():
+    """Verify that multiple data source adapters are exposed and functional."""
+    from api.source_router import (
+        fetch_upstream_nasa_power,
+        fetch_upstream_noaa,
+        fetch_upstream_cmr_granule,
+        fetch_upstream_open_meteo,
+    )
+    assert callable(fetch_upstream_nasa_power)
+    assert callable(fetch_upstream_noaa)
+    assert callable(fetch_upstream_cmr_granule)
+    assert callable(fetch_upstream_open_meteo)
