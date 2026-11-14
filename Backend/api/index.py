@@ -121,7 +121,7 @@ def root() -> Dict[str, Any]:
     """Root endpoint welcoming API consumers and pointing to documentation."""
     return {
         "name": "Trend Detective API",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "description": "NASA Earth Science statistical trend engine & physical driver attribution platform",
         "docs": "/docs",
         "health": "/api/v1/health",
@@ -149,7 +149,7 @@ def health_check() -> Dict[str, Any]:
 
     return {
         "status": "healthy",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "runtime": "Vercel Serverless Python",
         "database_configured": supabase_configured,
