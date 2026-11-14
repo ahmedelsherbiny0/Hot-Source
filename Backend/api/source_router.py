@@ -554,7 +554,7 @@ def get_variable_time_series(
     elif abs(lat - 31.05) < 0.3 and abs(lon - 31.0) < 0.3 and variable == "surface_temp":
         cache_key = "benchmark_nile_delta_surface_temp"
     else:
-        cache_key = f"{variable}_{lat:.3f}_{lon:.3f}_{start_year}_{end_year}"
+        cache_key = f"v2_{variable}_{lat:.3f}_{lon:.3f}_{start_year}_{end_year}"
 
     # 2. Check Cache
     cached = get_cached_series(cache_key)
